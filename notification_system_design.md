@@ -61,3 +61,110 @@ Advantages:
 - Low latency
 - Reduced polling
 - Better scalability
+
+# Stage 2 - Database Design
+
+## Database Choice
+
+PostgreSQL is chosen for the notification system.
+
+Reasons:
+
+- ACID compliance ensures reliable data storage.
+- Strong support for indexing.
+- Handles large datasets efficiently.
+- Supports complex queries.
+- Scales well for thousands of students and millions of notifications.
+
+### Students
+
+| Column     |     Type              |
+|------------|----------             |
+| id         | BIGSERIAL PRIMARY KEY |
+| name       | VARCHAR(100)          |
+| email      | VARCHAR(255) UNIQUE   |
+| created_at | TIMESTAMP             |
+
+SQL :
+`CREATE TABLE students (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);`
+
+### Notifications
+
+| Column | Type |
+|----------|----------|
+| id | BIGSERIAL PRIMARY KEY |
+| student_id | BIGINT |
+| notification_type | VARCHAR(50) |
+| message | TEXT |
+| is_read | BOOLEAN |
+| created_at | TIMESTAMP |
+
+CREATE TABLE notifications (
+    id BIGSERIAL PRIMARY KEY,
+    student_id BIGINT NOT NULL,
+    notification_type VARCHAR(50) NOT NULL,
+    message TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY(student_id)
+    REFERENCES students(id)
+);
+
+
+## Relationship
+
+One Student can have many Notifications.
+
+Student (1) -----< Notifications (Many)
+
+#### Example data
+### Sample Student
+
+ID: 1
+Name: Aakash Chauhan
+Email: aakash@college.edu
+
+### Sample Notification
+
+ID: 101
+Student ID: 1
+Type: Placement
+Message: Microsoft hiring drive
+Read: False
+
+Unread notifications:
+
+SELECT *
+FROM notifications
+WHERE student_id = 1
+AND is_read = false;
+
+Latest notifications:
+
+SELECT *
+FROM notifications
+WHERE student_id = 1
+ORDER BY created_at DESC
+LIMIT 20;
+
+Mark notification as read:
+
+UPDATE notifications
+SET is_read = true
+WHERE id = 101;
+
+## Scalability
+
+Indexes will be added on:
+
+- student_id
+- is_read
+- created_at
+
+This enables fast retrieval of notifications even when the system stores millions of records.
