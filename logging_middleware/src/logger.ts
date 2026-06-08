@@ -18,12 +18,12 @@ async function getToken() {
   }
   
   const response = await axios.post(AUTH_API, {
-    email: "a2023cse9317@imsec.ac.in",
-    name: "aakash chauhan",
-    rollNo: "2301430100002",
-    accessCode: "nyXQMu",
-    clientID: "33d6b5df-2edb-49ef-8b18-71ae3bdaa45c",
-    clientSecret: "mUvvztfCPEdBDNDd"
+    email: process.env.USER_EMAIL,
+    name: process.env.USER_NAME,
+    rollNo: process.env.USER_ROLL_NO,
+    accessCode: process.env.USER_ACCESS_CODE,
+    clientID: process.env.CLIENT_ID,
+    clientSecret: process.env.CLIENT_SECRET
   });
   
   cachedToken = response.data.access_token;
