@@ -7,7 +7,7 @@ export default function Layout() {
             <AppBar position="static" color="primary">
                 <Toolbar>
                     <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-                        Affordmed Notifications
+                        Notifications
                     </Typography>
                     <Button color="inherit" component={Link} to="/">
                         All Notifications
