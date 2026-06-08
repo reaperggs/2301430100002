@@ -624,3 +624,23 @@ No notifications are lost.
 ## Conclusion
 
 The original implementation is simple but not scalable or fault tolerant. Using database persistence, message queues, worker services, retry mechanisms, and asynchronous processing provides a reliable architecture capable of delivering notifications to tens of thousands of students efficiently.
+
+## Maintaining Top 10 Efficiently
+
+Sorting the entire notification list every time a new notification arrives is inefficient.
+
+Instead, a Min Heap (Priority Queue) of size 10 can be maintained.
+
+Algorithm:
+
+1. Insert incoming notification into heap.
+2. If heap size exceeds 10:
+   remove the lowest priority notification.
+3. Heap always contains the current top 10 notifications.
+
+Complexity:
+
+Insertion: O(log 10)
+Removal: O(log 10)
+
+Effectively O(1) because heap size remains fixed.
