@@ -168,3 +168,122 @@ Indexes will be added on:
 - created_at
 
 This enables fast retrieval of notifications even when the system stores millions of records.
+
+
+## Stage 3 - Query Optimization
+
+### Given Query
+
+
+SELECT *
+FROM notifications
+WHERE studentID = 1042
+AND isRead = false
+ORDER BY createdAt ASC;
+
+
+### Is the Query Accurate?
+
+The query is functionally correct because it retrieves all unread notifications for a specific student. However, it is not optimal for a production system handling 50,000 students and 5,000,000 notifications.
+
+Issues with the query:
+
+1. Uses SELECT *, which retrieves unnecessary columns and increases network and memory usage.
+2. Returns all unread notifications without pagination.
+3. Sorting can become expensive on large datasets.
+4. Displays the oldest unread notifications first (ASC), whereas users generally expect the most recent notifications first.
+
+A more efficient query would be:
+
+sql
+SELECT id, notificationType, message, createdAt
+FROM notifications
+WHERE studentID = 1042
+AND isRead = false
+ORDER BY createdAt DESC
+LIMIT 50;
+
+
+### Why Is It Slow?
+
+With millions of notifications stored in the database, the query may perform a full table scan if appropriate indexes are not available.
+
+The database must:
+
+1. Scan a large number of rows.
+2. Filter records matching studentID and isRead.
+3. Sort the filtered results by createdAt.
+4. Return the matching rows.
+
+Without indexing, the time complexity is approximately:
+
+O(N)
+
+where N is the total number of notifications.
+
+As the number of notifications grows, query performance degrades significantly.
+
+### Optimization Strategy
+
+Create a composite index that supports both filtering and sorting:
+
+
+CREATE INDEX idx_notifications_student_read_created
+ON notifications(studentID, isRead, createdAt);
+
+
+Benefits:
+
+* Faster filtering by studentID.
+* Faster filtering by isRead.
+* Faster sorting by createdAt.
+* Reduced disk I/O.
+* Better scalability for millions of records.
+
+Expected complexity improves to approximately:
+
+
+O(log N)
+
+
+for index lookup operations.
+
+### Should Every Column Be Indexed?
+
+No.
+
+Indexing every column is not recommended.
+
+Disadvantages of excessive indexing:
+
+1. Increased storage consumption.
+2. Slower INSERT operations.
+3. Slower UPDATE operations.
+4. Slower DELETE operations.
+5. Additional maintenance overhead.
+
+Indexes should only be created on columns that are frequently used for filtering, sorting, or joining.
+
+### Query to Find Students Who Received Placement Notifications in the Last 7 Days
+
+
+SELECT DISTINCT studentID
+FROM notifications
+WHERE notificationType = 'Placement'
+AND createdAt >= NOW() - INTERVAL '7 days';
+
+
+### Additional Scaling Recommendations
+
+To further improve performance as data volume grows:
+
+1. Implement pagination using `LIMIT` and `OFFSET`.
+2. Avoid `SELECT *`; retrieve only required columns.
+3. Archive old notifications to separate storage.
+4. Partition the notifications table based on date ranges.
+5. Use Redis caching for frequently accessed notification data.
+6. Monitor query execution plans and optimize indexes as usage patterns evolve.
+
+### Conclusion
+
+The original query is correct but inefficient at scale. A composite index on `(studentID, isRead, createdAt)`, pagination, selective column retrieval, and caching strategies significantly improve performance and ensure the system can handle millions of notifications efficiently.
