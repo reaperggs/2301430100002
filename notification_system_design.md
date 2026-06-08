@@ -287,3 +287,153 @@ To further improve performance as data volume grows:
 ### Conclusion
 
 The original query is correct but inefficient at scale. A composite index on `(studentID, isRead, createdAt)`, pagination, selective column retrieval, and caching strategies significantly improve performance and ensure the system can handle millions of notifications efficiently.
+
+## Stage 4 - Scaling Notification Retrieval
+
+### Problem Statement
+
+Currently, notifications are fetched directly from the database on every page load for every student. As the number of students and notifications increases, this creates excessive database load, higher response times, and poor user experience.
+
+### Proposed Solution
+
+A combination of pagination, caching, and real-time updates should be used to reduce database load and improve performance.
+
+---
+
+### 1. Pagination
+
+Instead of loading all notifications, load only a small subset.
+
+Example:
+
+
+GET /notifications?page=1&limit=20
+
+
+Benefits:
+
+* Reduces database workload.
+* Reduces network traffic.
+* Improves page load time.
+* Scales better as notification count grows.
+
+Tradeoff:
+
+* Additional API calls are required when users scroll through older notifications.
+
+---
+
+### 2. Redis Caching
+
+Frequently accessed notifications should be stored in Redis.
+
+Workflow:
+
+1. User requests notifications.
+2. Application checks Redis cache.
+3. If data exists, return cached data.
+4. Otherwise fetch from database and update cache.
+
+Benefits:
+
+* Significantly reduces database queries.
+* Faster response times.
+* Handles traffic spikes effectively.
+
+Tradeoff:
+
+* Additional infrastructure cost.
+* Cache invalidation must be handled carefully when notifications change.
+
+---
+
+### 3. Real-Time Updates Using WebSockets
+
+Instead of fetching notifications on every page refresh, establish a persistent WebSocket connection.
+
+Workflow:
+
+1. User opens the application.
+2. Frontend establishes WebSocket connection.
+3. New notifications are pushed instantly by the server.
+
+Benefits:
+
+* Eliminates unnecessary polling.
+* Reduces database load.
+* Provides instant notification delivery.
+
+Tradeoff:
+
+* Increased implementation complexity.
+* Requires management of persistent connections.
+
+---
+
+### 4. Lazy Loading / Infinite Scrolling
+
+Initially load only the latest notifications.
+
+Older notifications are loaded when the user scrolls.
+
+Benefits:
+
+* Faster initial page load.
+* Lower memory usage.
+* Better user experience.
+
+Tradeoff:
+
+* Requires additional frontend implementation.
+
+---
+
+### 5. Database Indexing
+
+Create indexes on frequently queried columns.
+
+
+CREATE INDEX idx_notifications_student_read_created
+ON notifications(studentID, isRead, createdAt);
+
+
+Benefits:
+
+* Faster query execution.
+* Reduced disk scanning.
+
+Tradeoff:
+
+* Increased storage usage.
+* Slightly slower INSERT and UPDATE operations.
+
+---
+
+### Recommended Architecture
+
+Client
+   |
+   v
+Load Balancer
+   |
+   v
+Application Server
+   |
+   +---- Redis Cache
+   |
+   +---- PostgreSQL Database
+   |
+   +---- WebSocket Server
+
+### Final Recommendation
+
+The most effective solution is a combination of:
+
+1. Pagination for limiting data retrieval.
+2. Redis caching for frequently accessed notifications.
+3. WebSockets for real-time notification delivery.
+4. Lazy loading for older notifications.
+5. Proper indexing for efficient database queries.
+
+This approach minimizes database load, improves response times, and provides a scalable solution capable of supporting millions of notifications and tens of thousands of students.
+
